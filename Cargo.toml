@@ -1,0 +1,8 @@
+[workspace]
+
+members = [
+    "bin/node",
+    "bin/pallets/*",
+    "bin/runtime",
+    "narwhal",
+]

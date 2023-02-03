@@ -1,0 +1,10 @@
+[package]
+name = "substrate-narwhal"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+futures = "0.3.21"
+thiserror = "1.0.38"
+
+sc-service = { version = "0.10.0-dev", git = "https://github.com/paritytech/substrate.git", "branch" = "polkadot-v0.9.35" }
