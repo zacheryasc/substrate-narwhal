@@ -9,6 +9,9 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub enum Error {
     #[error("Certificate error: {0}")]
     Certificate(#[from] CertificateError),
+
+    #[error("Failed to send message. Error: {0}")]
+    Sending(#[from] SendError),
 }
 
 #[derive(Debug, Error)]
@@ -18,4 +21,10 @@ pub enum CertificateError {
         certificate_round: Round,
         gc_round: Round,
     },
+}
+
+#[derive(Debug, Error)]
+pub enum SendError {
+    #[error("Failed to send certificate to the consensus layer. Error: {0}")]
+    CertificateNew(#[from] futures::channel::mpsc::SendError),
 }
