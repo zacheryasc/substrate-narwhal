@@ -1,13 +1,13 @@
 use futures::{
-    channel::mpsc::{self, Receiver},
-    StreamExt,
+    channel::mpsc::{self, Receiver, Sender},
+    SinkExt, StreamExt,
 };
 use sc_service::SpawnTaskHandle;
 
 use crate::{
-    error::{CertificateError, Result},
+    error::{from_error, CertificateError, Result, Error},
     traits::{DigestStore, Hash},
-    types::{Certificate, CertificateStore, Round},
+    types::{Certificate, CertificateStore, Epoch, Round},
 };
 
 /// The default channel capacity for each channel of the primary.
@@ -17,18 +17,24 @@ pub struct Primary {
     rx_certificates: Receiver<Certificate>,
     certificate_store: CertificateStore,
     gc_round: Round,
+    highest_received_round: Round,
+    /// Send valid a quorum of certificates' ids to the `Proposer` (along with their round).
+    tx_parents: Sender<(Vec<Certificate>, Round, Epoch)>,
 }
 
 impl Primary {
     /// spawn a primary service
     pub fn spawn(spawn_handle: SpawnTaskHandle) -> () {
         let (_, rx_certificates) = mpsc::channel(CHANNEL_CAPACITY);
+        let (tx_parents, _) = mpsc::channel(CHANNEL_CAPACITY);
 
         spawn_handle.spawn("primary", "", async move {
             Self {
                 rx_certificates,
                 certificate_store: (),
                 gc_round: 0,
+                highest_received_round: 0,
+                tx_parents,
             }
             .run()
             .await
@@ -60,7 +66,20 @@ impl Primary {
     async fn process_certificate(&mut self, certificate: Certificate) -> Result<()> {
         self.sanitize_certificate(&certificate).await?;
         let digest = certificate.digest();
-        if self.certificate_store.read(digest)?.is_some() {}
+        if self.certificate_store.read(digest)?.is_some() {
+            // Certificate has already been processed
+            return Ok(());
+        }
+
+        self.highest_received_round = self.highest_received_round.max(certificate.round());
+
+        // NOTE: Assumes cert is well signed
+        let minimal_round_for_parents = certificate.round().saturating_sub(1);
+        self.tx_parents
+            .send((vec![], minimal_round_for_parents, certificate.epoch()))
+            .await
+            .map_err(from_error!(Error::Sending))?;
+
         Ok(())
     }
 

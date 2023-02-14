@@ -9,6 +9,9 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub enum Error {
     #[error("Certificate error: {0}")]
     Certificate(#[from] CertificateError),
+
+    #[error("Failed to send message: {0}")]
+    Sending(String),
 }
 
 #[derive(Debug, Error)]
@@ -19,3 +22,10 @@ pub enum CertificateError {
         gc_round: Round,
     },
 }
+
+macro_rules! from_error {
+    ($error:expr) => {
+        |e| $error(e.to_string())
+    };
+}
+pub(crate) use from_error;

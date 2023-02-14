@@ -6,11 +6,15 @@ use crate::{
 /// A certificate of block availability
 pub struct Certificate {
     round: Round,
+    epoch: Epoch,
 }
 
 impl Certificate {
     pub fn round(&self) -> Round {
         self.round
+    }
+    pub fn epoch(&self) -> Round {
+        self.epoch
     }
 }
 
@@ -36,6 +40,9 @@ impl DigestStore for CertificateStore {
         Ok(None)
     }
 }
+
+/// The epoch number
+pub type Epoch = u64;
 
 /// The counter for successive synchronization rounds
 pub type Round = u64;
