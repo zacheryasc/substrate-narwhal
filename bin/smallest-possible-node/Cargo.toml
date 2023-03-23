@@ -1,0 +1,13 @@
+[package]
+name = "smallest-possible-node"
+version = "0.1.0"
+edition = "2021"
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[[bin]]
+name = "node-template"
+
+[dependencies]
+clap = { version = "4.0.9", features = ["derive"] }
